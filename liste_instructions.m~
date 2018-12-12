@@ -1,0 +1,113 @@
+%% START
+format compact
+clc, clear, close all
+
+tic
+%% COMPILE C-FILE
+mex fast_sim_laser_SYS4.c
+    % system 1: DIM = 4, Bif_num = 2
+    % system 3: DIM = 7, Bif_num = 3
+    % system 4: DIM = 5, Bif_num = 1
+mex fast_detect_extrema.c
+
+%% INITIALISE PARAMETERS
+% System Parameters (that change)
+DIM     = 5;        % <- CHANGES: for each system
+bif_eqn = 1;        % <- CHANGES: for each system
+
+% System Parameters
+% PCF Paper Parameters Values
+eta     = 0;
+omega   = 0;
+alpha   = 2;
+ka      = 0.96;
+beta    = (1-ka)/(2*ka);
+T       = 1200;
+P       = 0.6016;
+theta   = 1143;
+tau_R   = 20;
+
+% Typical Parameter Values
+% eta     = 0;                          % sweep [0, 0.06]
+% omega   = 0;
+% alpha   = 2;                          % in [2, 3, 5]
+% ka      = 0.96;                       % in [0.96, 1]
+% beta    = (1-ka)/(2*ka);
+% T       = 1200;                       % in [1000, 500, 100]
+% P       = 0.6016;                     % in [0.6, 1, 2]
+% theta   = 1143;                       % in [1000, 2500, 5000, 7000]
+% tau_R   = 20;                         % in {20, 50}
+
+% Create Folder
+Name = ['test_SYS4_tau=', num2str(tau_R)]; % <- CHANGES: system, and bif var
+folder = [Name, '/'];
+mkdir(folder);
+
+% Parameters: Evaluation
+params_laser = [eta, omega, alpha, beta, ka, T, P, theta, tau_R];
+num_itter    = 500;     % <- CHANGES: resolution
+param_num    = 1;       % <- (can) CHANGE: bifurcation parameter
+param_vals   = linspace(0, 0.06, num_itter);
+h            = 1;
+horizon      = 0.2e6;
+transient    = 1e6;
+direction    = sign(param_vals(end) - param_vals(1));
+
+PAST = [];
+
+%% Simulation
+disp('Simulation Started.')
+tic
+
+for inc = 1:num_itter
+    params_laser(param_num) = param_vals(inc);
+    
+    PAST = sim_laser_PCF(params_laser, [h transient], PAST, DIM);
+    
+    PAST = sim_laser_PCF(params_laser, [h horizon], PAST, DIM);
+    
+    if ~isequal(direction, -1)
+        save([folder, 'sim_laser_pcf_', num2str(inc), '.mat'], 'PAST');
+    else
+        save([folder, 'sim_laser_pcf_', num2str(num_itter-inc+1), '.mat'], 'PAST');
+    end
+end
+
+%% Bifurcation Diagram
+num_extrema = 105;
+epsilon = 1e-3;
+
+L = num_itter*num_extrema;
+GAMMA = zeros(L,1);
+EXTREMA = zeros(L,1);
+index = 1;
+
+for inc=1:num_itter
+    load([folder, 'sim_laser_pcf_', num2str(inc), '.mat']);
+    PAST = abs(PAST(1:end, bif_eqn));
+    TEMP = detect_extrema(PAST, num_extrema, epsilon);
+    l = length(TEMP);
+    GAMMA(index:index+l-1) = param_vals(inc);
+    EXTREMA(index:index+l-1) = TEMP;
+    index = index + l;
+end
+
+GAMMA = GAMMA(1:index - 1);
+EXTREMA = EXTREMA(1:index - 1);
+
+h = figure('Renderer', 'painters', 'Position', [10 10 900 500]);
+hold on
+plot(GAMMA, EXTREMA, '.k', 'MarkerSize', 1)
+
+grid on
+axis tight
+ylabel('Output power (a. u.)')
+saveas(h, [folder, 'bif_diag.png'], 'png');
+save([folder, 'bif_extrema.mat'], 'EXTREMA');
+save([folder, 'bif_gamma.mat'], 'GAMMA');
+
+close all
+
+%% END
+disp('Simulation Completed')
+toc
