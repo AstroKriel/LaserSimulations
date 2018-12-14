@@ -105,7 +105,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray * prhs[]) {
     params_temp = mxGetPr(prhs[1]);
     PAST = mxGetPr(prhs[2]);
     
-    //Parameters [eta, omega, alpha, beta, ka, T, P, theta];
+    //Parameters [eta, omega, alpha, beta, ka, T, P, theta, tau_R];
     //           [ka, beta, eta, omega, P, T]
     eta = params_laser[0];
     omega = params_laser[1];

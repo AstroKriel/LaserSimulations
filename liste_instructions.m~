@@ -22,7 +22,7 @@ log_fig_close       = false;    % close fig
 log_freq_analysis   = false;    % analyse frequency
 
 % System Parameters
-% % Param Set 1: PCF Paper Parameters Values
+% % PCF Paper Parameters Values
 % var_param = 1;
 % eta     = 0;
 % omega   = 0;
@@ -34,7 +34,7 @@ log_freq_analysis   = false;    % analyse frequency
 % theta   = 1143;
 % tau_R   = 20;
 
-% % Param Set 2: Typical Parameter Values
+% % Typical Parameter Values
 var_param = 2;
 eta     = 0;                          % sweep [0, 0.06]
 omega   = 0;
@@ -111,7 +111,7 @@ for SYS = 3
     for itter = 1:num_itter
         %% Integrate
         % dependencies: param_list, param_num, itter, param_vals, h,
-        % transient, sim_past, DIM, horizon, VAR
+        % transient, sim_past, DIM
         param_list(param_num) = param_vals(itter);
         
         if ~isequal(transient, 0)
@@ -124,7 +124,6 @@ for SYS = 3
             disp(['System ', num2str(VAR), ' has NaN values'])
             break
         end
-        % output: sim_past, param_list
         
         %% Bifurcation Analysis
         % dependencies: bif_eqn, sim_past, num_extrema, bif_epsilon,
@@ -247,7 +246,6 @@ for SYS = 3
         end
     end
     
-    %% Plot Frequency
     figure, hold on
     plot(param_vals, Chaos_bw)
     plot(param_vals, Freq_ext_cav_node, 'o')

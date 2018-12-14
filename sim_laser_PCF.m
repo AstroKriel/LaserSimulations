@@ -18,10 +18,11 @@ function OUTPUT = sim_laser_PCF(params_laser, params_temp, INPUT, DIM)
     switch DIM
         case 4
             RESULTS = fast_sim_laser_SYS1(params_laser, params_temp, PAST);
-        case 5
-            RESULTS = fast_sim_laser_SYS4(params_laser, params_temp, PAST);
+        
         case 7
             RESULTS = fast_sim_laser_SYS3(params_laser, params_temp, PAST);
+        case 5
+            RESULTS = fast_sim_laser_SYS4(params_laser, params_temp, PAST);
         otherwise
             disp('Dimension of system is wrong!')
     end
