@@ -12,11 +12,11 @@ library(gridExtra)
 # System Parameters
 var_file_num  = 39  # which file to analyse
 var_sys       = 4   # which system in [1, 4] \ {3}
-var_param_set = 2   # parameter set in {1, 2}
+var_param_set = 1   # parameter set in {1, 2}
 tau_r         = 50
 
 # Bifurcation Plot Parameters
-plot_bif      = FALSE
+plot_bif      = TRUE
 var_bif_max   = 0.1
 var_bif_min   = 0
 var_bif_max2  = 0.1
@@ -54,11 +54,11 @@ if (plot_bif) {
          width = 20, height = 12, dpi = 600, units = "cm", device='png')
 }
 
-y_eta     <- scan(file = "bif_gamma.txt")
-y_eta     <- y_eta[(var_bif_min2 < y_eta) & (y_eta < var_bif_max2)]
-y_extrema <- scan(file = "bif_extrema.txt")
-y_extrema <- y_extrema[1:length(y_eta)]
-qplot(y_eta, y_extrema, xlim = c(0.075, 0.085), ylim = c(0.3, 1.25))
+# y_eta     <- scan(file = "bif_gamma.txt")
+# y_eta     <- y_eta[(var_bif_min2 < y_eta) & (y_eta < var_bif_max2)]
+# y_extrema <- scan(file = "bif_extrema.txt")
+# y_extrema <- y_extrema[1:length(y_eta)]
+# qplot(y_eta, y_extrema, xlim = c(0.075, 0.085), ylim = c(0.3, 1.25))
 
 # Time Plot
 if (plot_time) {
