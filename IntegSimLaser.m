@@ -1,4 +1,30 @@
-function OUTPUT = integ_sim_laser(params_laser, params_temp, INPUT, DIM, name, BIF)
+function OUTPUT = IntegSimLaser(params_laser, params_temp, INPUT, DIM, name, BIF)
+%{ 
+    Authors:    Neco Kriel  (2019)
+                Chi Hak     (2017)
+
+    Purpose:    
+
+    Input:
+    - params_laser
+    - params_temp
+    - INPUT
+    - DIM
+    - name
+    - BIF
+
+    Output:
+    - OUTPUT
+
+    Function Dependencies:
+    - fast_sim_laser_pcf
+    - fast_sim_laser_pcf_noise
+    - fast_sim_laser_prof
+    - fast_sim_laser_prof_noise
+    - fast_sim_laser_prpcf
+    - fast_sim_laser_prpcf_noise
+%}
+
     theta   = params_laser(3);
     h       = params_temp(1);
     horizon = params_temp(2);
@@ -16,6 +42,7 @@ function OUTPUT = integ_sim_laser(params_laser, params_temp, INPUT, DIM, name, B
 
     PAST = reshape(PAST.', DIM*(delay+1), 1);
 
+    % choose the system
     switch name
         % PCF
         case 'PCF'
