@@ -8,88 +8,74 @@ clc, clear, close all
 tic
 disp('Script Started.')
 
-%% Compile C code:
-% Uncomment System of Interest
-mex fast_detect_extrema.c
+%% Compile C-Programs (if changes have been made):
+% mex fast_detect_extrema.c
 
-% Phase-Conjugate Feedback
-% mex fast_sim_laser_pcf.c
-% DIM = 5; BIF_EQN = 1; name = 'PCF';
+% mex fast_sim_laser_prof.c
+% mex fast_sim_laser_prof_noise.c
+DIM = 4; 
+BIF_EQN = 2;  
+name = 'PROF';
+% name = 'PROFN';
 
-% Polarization-Rotated Optical Feedback
-mex fast_sim_laser_prof.c
-DIM = 4; BIF_EQN = 2;  name = 'PROF';
-
-% % Polarization-Rotated Phase-Conjugate Feedback
 % mex fast_sim_laser_prpcf.c
-% DIM = 7; BIF_EQN = 3; name = 'PRPCF';
+% mex fast_sim_laser_prpcf_noise.c
+% DIM = 7; 
+% BIF_EQN = 3; 
+% name = 'PRPCF';
+% name = 'PRPCFN';
 
-tau_R = 50;
+% mex fast_sim_laser_pcf.c
+% mex fast_sim_laser_pcf_noise.c
+% DIM = 5; 
+% BIF_EQN = 1; 
+% name = 'PCF';
+% name = 'PCFN';
 
-% bif_length      = 'Long';
-% bif_start_1     = 0;
-% bif_end         = 0.95;
-
-bif_length      = 'Shorter';
-bif_start_1     = 0.06;
-bif_end         = 0.07;
+%% Variables that change
+tau_R   = 0;
+theta   = 7e3;
+% bifurcation Domain
+bif_start   = 0;
+bif_end     = 0.2;
 
 %% INITIALISE PARAMETERS
 % Sweeping Parameters:
-num_itter       = 100;  % resolution
-param_set_num   = 2;    % in {1, 2}
+num_itter   = 10;  % bif. resolution
 % Tuning Parameters
-bif_elem        = 1;    % bif. w/respect to param.
-dir             = '_F';
-bif_start_2     = 1e-5;
-
+bif_elem    = 4;    % bif. w/respect to param_set
+bif_perturb = 1e-5;
 
 % Logical Variables
-% Bifurcation Vars:
-log_bif_data_save   = true;
-% Frequency Analysis Vars:
-log_fft_save        = true;
+log_bif_data_save = true;
+log_fft_save      = true;
 
-%% System Parameter Sets:
-switch param_set_num
-    case 1
-        % Values as seen in paper
-        omega   = 0;
-        alpha   = 2;
-        ka      = 0.96;
-        T       = 1200;
-        P       = 0.6016;
-        theta   = 1143;
-    case 2
-        % Typical Parameter Values
-        omega   = 0;
-        alpha   = 3;        % in [2, 3, 5]
-        ka      = 0.96;     % in [0.96, 1]
-        T       = 1000;     % in [1000, 500, 100]
-        P       = 0.6;      % in [0.6, 1, 2]
-        theta   = 7000;     % in [1000, 2500, 5000, 7000]
-end
+% Initialise System's Parameter Values
+P       = 0.6;
+T       = 250;
+% theta   = 7e3;
+eta     = 0.08;
+ka      = 0.96;
+beta    = (1-ka)/(2*ka);
+alpha   = 2;
+omega   = 0;
+% tau_R   = 0;
+tau_P   = 1.4e-3;
+R       = 0;
 
-% Integrating Forward
-param_vals = linspace(bif_start_1, bif_end, num_itter) + bif_start_2;
-
-% Create Folder to Save Data
-if log_bif_data_save || log_fft_save
-    folder = ['SYS_', name, '_Param=', num2str(param_set_num),...
-        '_tau=', num2str(tau_R), dir];
-    mkdir(folder);
-end
-
-eta       = 0; % initialise, but sweep parameter
-tau_P     = 1.4e-3;
-beta      = (1-ka)/(2*ka);
-param_set = [eta, omega, alpha, beta, ka, T, P, theta, tau_R];
-
-% Analysis Parameters
+% Initialise Analysis Parameters
 h         = 1;
 horizon   = 0.2e6;
 transient = 1e6;
 delay     = floor(theta/h);
+
+%% Initialise Analysis:
+param_vals = linspace(bif_start, bif_end, num_itter) + bif_perturb;
+param_set  = [P, T, theta, eta, beta, ka, alpha, tau_R, omega, R];
+
+% Create Folder to Save Data
+folder = ['SYS_', name, '_tau=', num2str(tau_R), '_theta=', num2str(theta)];
+mkdir(folder);
 
 % Initialise Bifurcation Parameters
 num_extrema     = 105;
@@ -99,14 +85,10 @@ bif_eta         = zeros(num_val, 1);
 bif_extrema     = zeros(num_val, 1);
 bif_index       = 1;
 
-% Initialise Frequency Analysis Parameters
-Chaos_bw            = zeros(num_itter, 1);
-Chaus_eff_bw        = zeros(num_itter, 1);
-Freq_ext_cav_node   = zeros(num_itter, 1);
-
+% Initialise System's Past
 sim_past = [];
 
-% Frequency Analysis:
+% Initialise Frequency Analysis:
 tau_p       = 1.4e-3;
 L           = floor(horizon/h) + 1;
 NFFT        = 2^nextpow2(L);
@@ -117,7 +99,7 @@ SPECTRA     = zeros(NFFT,1);
 %% Simulation
 for itter = 1:num_itter
     %% Show Progress
-    if (mod(itter, 10) == 0)
+    if (mod(itter, 1) == 0)
         disp(itter)
     end
     
@@ -125,10 +107,12 @@ for itter = 1:num_itter
     param_set(bif_elem) = param_vals(itter);
     
     if ~isequal(transient, 0)
-        sim_past = integ_sim_laser(param_set, [h transient], sim_past, DIM);
+        sim_past = integ_sim_laser(param_set, [h transient], sim_past,...
+            DIM, name, BIF_EQN);
     end
     
-    sim_past = integ_sim_laser(param_set, [h horizon], sim_past, DIM);
+    sim_past = integ_sim_laser(param_set, [h horizon], sim_past, DIM,...
+        name, BIF_EQN);
     
     if any(any(isnan(sim_past)))
         disp(['System ', name,...
@@ -157,15 +141,16 @@ if (log_bif_data_save && ~any(any(isnan(sim_past))))
     bif_eta = bif_eta(1:bif_index-1);
     bif_extrema = bif_extrema(1:bif_index-1);
     
-    csvwrite([folder, '/', 'bif_extrema_', bif_length,'.txt'], bif_extrema);
-    csvwrite([folder, '/', 'bif_eta_', bif_length,'.txt'], bif_eta);
+    csvwrite([folder, '/', 'bif_extrema.txt'], bif_extrema);
+    csvwrite([folder, '/', 'bif_eta.txt'], bif_eta);
 end
 % output: bif_eta, bif_extrema
 
 %% Save Frequency
 if (log_fft_save)
-    csvwrite([folder, '/', 'fft_display_', bif_length, '.txt'], DISPLAY);
+    csvwrite([folder, '/', 'fft_display.txt'], DISPLAY);
 end
+% output: DISPLAY
 
 toc
 disp('Script finished.')

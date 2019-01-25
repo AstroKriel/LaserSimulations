@@ -5,10 +5,10 @@
 #include "stdlib.h"
 
 // Initialise Matlab I/O
-double *params_laser, *params_temp, *PAST, *RESULTS, *X, *Xd, *dX, *K;
+double *params_laser, *params_temp, *PAST, *RESULTS, *X, *Xd, *dX, *K, *NOISE;
 
 // Initialise Parameters Used
-double P, T, theta, eta, beta, ka, alpha, tau_R, h, horizon;
+double P, T, theta, eta, beta, ka, alpha, omega, R, h, horizon;
 int steps, delay;
 
 // RK coefficients and parameters
@@ -22,17 +22,14 @@ double b[4][4] = {
 double c[4] =
 {       1.0/8.0,        3.0/8.0,          3.0/8.0,       1.0/8.0};
 
-int DIM = 7, S = 4;
+int DIM = 4, S = 4;
 
 // Equations of the system
 void eval(double *dX, double *X, double *Xd) {
-    dX[0] = X[0]*X[4];
-    dX[1] = alpha*X[4];
-    dX[2] = ka*(X[4] - beta)*X[2] + eta*sqrt(ka)*X[5]*cos(X[6] + X[3]);
-    dX[3] = alpha*ka*(X[4] - beta) - eta*sqrt(ka)*X[5]/X[2]*sin(X[6] + X[3]);
-    dX[4] = (P - X[4] - (1 + 2*X[4])*(X[0]*X[0] + X[2]*X[2]))/T;
-    dX[5] = (Xd[0]*cos(X[1] + X[6]) - X[5])/tau_R;
-    dX[6] = -Xd[0]*sin(X[1] + X[6])/(X[5]*tau_R);
+    dX[0] = X[3]*X[0];
+    dX[1] = ka*(X[3] - beta)*X[1] + eta*(sqrt(ka))*Xd[0]*cos(X[2]);
+    dX[2] = omega + alpha*(Xd[3] - ka*(X[3] - beta)) - eta*(sqrt(ka))*sin(X[2])*Xd[0]/X[1];
+    dX[3] = (P - X[3] - (1 + 2*X[3])*(X[0]*X[0] + X[1]*X[1]))/T;
 }
 
 // Runge-Kutta
@@ -73,6 +70,8 @@ void simu() {
             for (s=0; s<S; s++)
                 RESULTS[n+DIM*(i+1)] += h*c[s]*K[n+DIM*s];
         }
+        RESULTS[0+DIM*(i+1)] += sqrt(h*R)*NOISE[0+2*(i-delay)];
+        RESULTS[1+DIM*(i+1)] += sqrt(h*R)*NOISE[1+2*(i-delay)];
     }
     free(dX);
     free(X);
@@ -85,16 +84,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray * prhs[]) {
     // Check number of inputs and outputs
     if (nlhs != 1)
         mexErrMsgTxt("Wrong number of outputs!");
-    if (nrhs !=3)
+    if (nrhs !=4)
         mexErrMsgTxt("Wrong number of inputs!");
     
     // Get inputs
     params_laser = mxGetPr(prhs[0]);
     params_temp  = mxGetPr(prhs[1]);
     PAST         = mxGetPr(prhs[2]);
+    NOISE        = mxGetPr(prhs[3]);
     
     // Parameters Received: [P, T, theta, eta, beta, ka, alpha, tau_R, omega, R]
-    // Parameters Used:     [P, T, theta, eta, beta, ka, alpha, tau_R,         ]
+    // Parameters Used:     [P, T, theta, eta, beta, ka, alpha,        omega, R]
     P       = params_laser[0];
     T       = params_laser[1];
     theta   = params_laser[2];
@@ -102,7 +102,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray * prhs[]) {
     beta    = params_laser[4];
     ka      = params_laser[5];
     alpha   = params_laser[6];
-    tau_R   = params_laser[7];
+    omega   = params_laser[8];
+    R       = params_laser[9];
     
     h       = params_temp[0];
     horizon = params_temp[1];

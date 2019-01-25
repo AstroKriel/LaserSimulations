@@ -5,10 +5,10 @@
 #include "stdlib.h"
 
 // Initialise Matlab I/O
-double *params_laser, *params_temp, *PAST, *RESULTS, *X, *Xd, *dX, *K;
+double *params_laser, *params_temp, *PAST, *RESULTS, *X, *Xd, *dX, *K, *NOISE;
 
 // Initialise Parameters Used
-double P, T, theta, eta, beta, ka, alpha, tau_R, h, horizon;
+double P, T, theta, eta, beta, ka, alpha, tau_R, R, h, horizon;
 int steps, delay;
 
 // RK coefficients and parameters
@@ -55,6 +55,7 @@ void simu() {
         }
     }
     for (i=delay; i<steps+delay+1; i++){
+        
         for (s=0; s<S; s++){
             for (n=0; n<DIM; n++){
                 X[n] = RESULTS[n+DIM*i];
@@ -65,6 +66,7 @@ void simu() {
                     X[n] += h*b[s][j]*K[n+DIM*j];
             }
             eval(dX, X, Xd);
+            
             for (n=0; n<DIM; n++)
                 K[n+DIM*s] = dX[n];
         }
@@ -73,6 +75,8 @@ void simu() {
             for (s=0; s<S; s++)
                 RESULTS[n+DIM*(i+1)] += h*c[s]*K[n+DIM*s];
         }
+        RESULTS[0+DIM*(i+1)] += sqrt(h*R)*NOISE[0+2*(i-delay)];
+        RESULTS[1+DIM*(i+1)] += sqrt(h*R)*NOISE[1+2*(i-delay)];
     }
     free(dX);
     free(X);
@@ -85,16 +89,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray * prhs[]) {
     // Check number of inputs and outputs
     if (nlhs != 1)
         mexErrMsgTxt("Wrong number of outputs!");
-    if (nrhs !=3)
+    if (nrhs !=4)
         mexErrMsgTxt("Wrong number of inputs!");
     
     // Get inputs
     params_laser = mxGetPr(prhs[0]);
     params_temp  = mxGetPr(prhs[1]);
     PAST         = mxGetPr(prhs[2]);
+    NOISE        = mxGetPr(prhs[3]);
     
     // Parameters Received: [P, T, theta, eta, beta, ka, alpha, tau_R, omega, R]
-    // Parameters Used:     [P, T, theta, eta, beta, ka, alpha, tau_R,         ]
+    // Parameters Used:     [P, T, theta, eta, beta, ka, alpha, tau_R,        R]
     P       = params_laser[0];
     T       = params_laser[1];
     theta   = params_laser[2];
@@ -103,6 +108,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray * prhs[]) {
     ka      = params_laser[5];
     alpha   = params_laser[6];
     tau_R   = params_laser[7];
+    R       = params_laser[9];
     
     h       = params_temp[0];
     horizon = params_temp[1];
