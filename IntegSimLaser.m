@@ -18,7 +18,7 @@ function OUTPUT = IntegSimLaser(params_laser, params_temp, INPUT, DIM, name, BIF
 
     Function Dependencies:
     - fast_sim_laser_pcf
-    - fast_sim_laser_pcf_noise
+    - 
     - fast_sim_laser_prof
     - fast_sim_laser_prof_noise
     - fast_sim_laser_prpcf
@@ -47,9 +47,6 @@ function OUTPUT = IntegSimLaser(params_laser, params_temp, INPUT, DIM, name, BIF
         % PCF
         case 'PCF'
             RESULTS = fast_sim_laser_pcf(params_laser, params_temp, PAST);
-        case 'PCFN'
-            RESULTS = fast_sim_laser_pcf_noise(params_laser, params_temp,...
-                PAST, NOISE);
         % PROF
         case 'PROF'
             RESULTS = fast_sim_laser_prof(params_laser, params_temp, PAST);

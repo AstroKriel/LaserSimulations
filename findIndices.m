@@ -1,9 +1,9 @@
-function [itter_start, itter_end_2] = findIndices(hor, ver)
-%{ 
+function [itter_start, itter_end_1, itter_end_2] = findIndices(hor, ver)
+%{
     Authors:    Neco Kriel, and
-                Guillaume Bouchez (2019)   
+                Guillaume Bouchez (2019)
 
-    Purpose:    
+    Purpose:
 
     Input:
     - hor
@@ -40,6 +40,7 @@ function [itter_start, itter_end_2] = findIndices(hor, ver)
                         if (cur_hor <= cur_ver && nex_hor >= nex_ver && ~points_found)
                             % hor grad > 0 & overlapping -> end period found
                             points_found = true;
+                            break;
                         end
 
                         % not overlapping

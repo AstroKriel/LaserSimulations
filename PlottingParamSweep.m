@@ -3,11 +3,7 @@
     Authors:    Neco Kriel  (2019)
                 Chi Hak     (2017)
 
-    Purpose:
-
-    Function Dependencies:
-    
-    Special Actions:
+    Purpose:    
 
 %}
 
@@ -24,14 +20,20 @@ name = 'PROF';
 % name = 'PRPCF';
 % name = 'PRPCFN';
 % name = 'PCF';
-% name = 'PCFN';
 
-pre_name = 'Q1/';
-folder   = ['SYS_', name, '_tau=', num2str(tau_R), '_theta=', num2str(theta)];
-filename = [pre_name, folder];
+paper_name = 'Typ';
+% paper_name = 'HO_ECM';
+% paper_name = 'M_ECM';
+% paper_name = 'SOAPS';
+% paper_name = 'R_SW_O_SL_1';
+% paper_name = 'R_SW_O_SL_2';
+% paper_name = 'R_SW_O_SL_3';
+
+pre_name = '';
+filename = ['Param_', paper_name, '/SYS_', name];
 
 param_start = 0;
-param_end   = 0.1;
+param_end   = 0.99;
 param_res   = 1e3;
 
 param_vals  = linspace(param_start, param_end, param_res);
@@ -60,8 +62,7 @@ cb = colorbar;
 set(cb,'Position',[0.92 0.6 .01 0.3])
 set(gca,'YDir','normal')
 axis tight
-title(['Power Spectrum: \{', name, ' System , \tau = ', num2str(tau),...
-    ', \theta = ', num2str(theta), '\}'], 'FontSize', 16)
+title(['Power Spectrum: ', name, ' System'], 'FontSize', 16)
 
 subplot(2, 1, 2)
 plot(xF, yF, 'k.', 'MarkerSize', 3)
