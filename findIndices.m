@@ -16,6 +16,8 @@ function [itter_start, itter_end_1, itter_end_2] = findIndices(hor, ver)
 
     points_found = false;
     itter_start = 1;
+    itter_end_1 = 1;
+    itter_end_2 = 1;
     while (itter_start < length(hor) && ~points_found)
         cur_hor = hor(itter_start);
         cur_ver = ver(itter_start);
