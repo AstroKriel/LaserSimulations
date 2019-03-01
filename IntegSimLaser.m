@@ -1,9 +1,9 @@
-function OUTPUT = IntegSimLaser(params_laser, params_temp, INPUT, DIM, name, BIF)
-%{ 
+function OUTPUT = integSimLaser(params_laser, params_temp, INPUT, DIM, name, BIF)
+%{
     Authors:    Neco Kriel  (2019)
                 Chi Hak     (2017)
 
-    Purpose:    
+    Purpose:
 
     Input:
     - params_laser
@@ -18,13 +18,12 @@ function OUTPUT = IntegSimLaser(params_laser, params_temp, INPUT, DIM, name, BIF
 
     Function Dependencies:
     - fast_sim_laser_pcf
-    - 
+    -
     - fast_sim_laser_prof
     - fast_sim_laser_prof_noise
     - fast_sim_laser_prpcf
     - fast_sim_laser_prpcf_noise
 %}
-
     theta   = params_laser(3);
     h       = params_temp(1);
     horizon = params_temp(2);
@@ -50,17 +49,20 @@ function OUTPUT = IntegSimLaser(params_laser, params_temp, INPUT, DIM, name, BIF
         case 'PCFN'
             RESULTS = fast_sim_laser_pcf_noise(params_laser, params_temp,...
                 PAST, NOISE);
-        % PROF
+            % PROF
         case 'PROF'
             RESULTS = fast_sim_laser_prof(params_laser, params_temp, PAST);
         case 'PROFN'
             RESULTS = fast_sim_laser_prof_noise(params_laser, params_temp,...
                 PAST, NOISE);
-        % PRPCF
+            % PRPCF
         case 'PRPCF'
             RESULTS = fast_sim_laser_prpcf(params_laser, params_temp, PAST);
         case 'PRPCFN'
             RESULTS = fast_sim_laser_prpcf_noise(params_laser, params_temp,...
+                PAST, NOISE);
+        case 'PRPCFUFN'
+            RESULTS = fast_sim_laser_prpcfuf_noise(params_laser, params_temp,...
                 PAST, NOISE);
     end
 

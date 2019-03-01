@@ -34,8 +34,6 @@
 %}
 
 %% PREPARE WORKSPACE
-format compact
-format short
 clc, clear, close all
 
 tic
@@ -46,53 +44,42 @@ disp('Started: ParamSweep')
 % mex fast_sim_laser_prof_noise.c
 % mex fast_sim_laser_prpcf.c
 % mex fast_sim_laser_prpcf_noise.c
+mex fast_sim_laser_prpcfuf_noise.c
 % mex fast_sim_laser_pcf.c
 
 %% CHOOSE SYSTEM
 % DIM     = 5; BIF_EQN = 1;
 % name_sys    = 'PCF';
-% name_sys    = 'PCFN';
 
-DIM     = 4; BIF_EQN = 2;
-% name_sys    = 'PROF';
-name_sys    = 'PROFN';
+% DIM     = 4; BIF_EQN = 2;
+% % name_sys    = 'PROFN';
+% name_sys    = 'PRPCFUFN';
 
-% DIM     = 7; BIF_EQN = 3;
-% % name_sys    = 'PRPCF';
-% name_sys    = 'PRPCFN';
+DIM     = 7; BIF_EQN = 3;
+name_sys    = 'PRPCFN';
 
 %% INITIALISE PARAMETERS
-% Param Sets:
-% PRPCFN and PROFN
-% k = 0.96, a = 2, theta = 7000
-% PRPCFN
-% 1 . k = 0.96, a = {[1, 3], 5}, theta = 7000
-% 2 . k = 0.96, a = 2, theta = {[800, 1e4], 2e4}
-% 3 . k = [0.8, 1], a = 2, theta = 7000
-% PRPCFN and PROFN
-% 4 . k = 0.96, a = 3, theta = {[800, 1e4], 2e4}
-
 % Sweeping Parameters
 param_iter   = 100;   % bif. resolution
 param_elem    = 4;    % bif. w/respect to param_set
 param_perturb = 1e-5; % perturb ini. val. (for when param_start = 0)
 param_start   = 0;    % first param. val.
-param_end     = 0.25; % final param. val.
+param_end     = 0.3; % final param. val.
 param_vals    = linspace(param_start, param_end, param_iter) +...
     param_perturb; % create array of param. vals.
 
 % Initialise System Parameters
-for theta = [800, 1e3:1e3:1e4, 2e4]
-    param_set_name = 'SOAPS_4'; % name_sys of parameter set (file-storage purposes)
+for tau_R = [0.1, 1, 50, 1e3]
+    param_set_name = 'alpha'; % name_sys of parameter set (file-storage purposes)
     P         = 0.6;    % pump parameter (above threshold)
     T         = 250;    % ratio of carrier to cavity lifetime
-%     theta     = 7000;   % normalised (time) delay
+    theta     = 7000;   % normalised (time) delay
     eta       = 0;      % feedback rate
     ka        = 0.96;   % gain coefficient ratio between the TM and TE modes
-    beta      = (1-ka)/(2*ka); % TM mode additional losses,
-    alpha     = 3;      % linewidth enhancement factor
+    beta      = (1-ka)/(2*ka); % TM mode additional losses
+    alpha     = 2;      % linewidth enhancement factor
     omega     = 0;      %
-    tau_R     = 50;     %
+%     tau_R     = 50;     %
     tau_P     = 1.4e-3; % photon lifetime (scale so freq-spectrum is in GHz)
     R         = 1e-12;  % variance of white Gaussian noise
     param_set = [P, T, theta, eta, beta, ka, alpha, tau_R, omega, R]; % store params
@@ -126,23 +113,24 @@ for theta = [800, 1e3:1e3:1e4, 2e4]
     
     % Create Folder (to save data)
     mkdir(['Param_', param_set_name])
-    folder = ['Param_', param_set_name, '/SYS_', name_sys, '_theta=', num2str(theta)];
-%     folder = ['Param_', param_set_name, '/SYS_', name_sys, '_alpha=', num2str(alpha)];
+%     folder = ['Param_', param_set_name, '/SYS_', name_sys, '_theta=', num2str(theta)];
+    folder = ['Param_', param_set_name, '/SYS_', name_sys, '_alpha=', num2str(alpha)];
 %     folder = ['Param_', param_set_name, '/SYS_', name_sys, '_kappa=', num2str(ka)];
+%     folder = ['Param_', param_set_name, '/SYS_', name_sys, '_T=', num2str(T)];
     mkdir(folder);
     
     %% SIMULATION
     for iter = 1:param_iter
         %% INTEGRATE
-        if (mod(iter, 5) == 0)
+        if (mod(iter, 5) == 1)
             disp(['Simulation: ', num2str(100*iter/param_iter), '% Complete'])
         end
         param_set(param_elem) = param_vals(iter);
         if ~isequal(transient, 0)
-            sim_past = IntegSimLaser(param_set, [h transient], sim_past,...
+            sim_past = integSimLaser(param_set, [h transient], sim_past,...
                 DIM, name_sys, BIF_EQN);
         end
-        sim_past = IntegSimLaser(param_set, [h horizon], sim_past, DIM,...
+        sim_past = integSimLaser(param_set, [h horizon], sim_past, DIM,...
             name_sys, BIF_EQN);
         if any(any(isnan(sim_past)))
             disp(['System ', name_sys,...
@@ -187,8 +175,9 @@ for theta = [800, 1e3:1e3:1e4, 2e4]
     
     %% SAVE DATA
     % Save Copy of Parameter Set
-    save(['Param_', param_set_name, '/', 'ParamSet.mat'], 'P', 'T', 'theta', 'beta', 'ka',...
-        'alpha', 'tau_R', 'omega', 'R', 'h', 'tau_P', 'horizon', 'param_start', 'param_end')
+    save(['Param_', param_set_name, '/', 'ParamSet.mat'], 'P', 'T', 'theta',...
+        'beta', 'ka', 'alpha', 'tau_R', 'omega', 'R', 'h', 'tau_P', 'horizon',...
+        'transient', 'param_start', 'param_end')
     
     % Save Bifurcation
     bif_eta = bif_eta(1:bif_index-1);

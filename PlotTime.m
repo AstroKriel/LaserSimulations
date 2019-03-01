@@ -21,8 +21,6 @@
 %}
 
 %% PREPARE WORKSPACE
-format compact
-format short
 clc, clear, close all
 
 tic
@@ -31,51 +29,39 @@ disp('Started: PlotTime')
 %% CHOOSE SYSTEM
 % DIM     = 5; BIF_EQN = 1;
 % name_sys    = 'PCF';
-% name_sys    = 'PCFN';
 
 % DIM     = 4; BIF_EQN = 2;
-% % name_sys    = 'PROF';
 % name_sys    = 'PROFN';
 
+
 DIM     = 7; BIF_EQN = 3;
-% name_sys    = 'PRPCF';
 name_sys    = 'PRPCFN';
 
 %% INITIALISE PARAMETERS
-% Param Sets:
-% 1 . k = 0.96, a = 2
-% 2 . k = 0.96, a = 3
-% 3 . k = 0.98, a = 5
-% 4 . k = 0.96, a = 2.5
-% 5 . a = 0.96, a = 2.2
-param_set_name = 'SOAPS_1'; % name_sys of parameter set (file-storage purposes)
-
-num_cycles = 2; % number of cycles of hor. and ver. polar. plotted
-eta_save   = [0.2, 0.5, 0.8]; % save figure for these vals. of eta
-eta_tol    = 1e-2; % the tol. of eta for which fig. will be saved
-
-% Sweeping Parameters
-param_itter   = 100; % bif. resolution
-param_elem    = 4;   % bif. w/respect to param_set
-param_perturb = 1e-5;
-param_start   = 0;
-param_end     = 0.25;
-param_vals    = linspace(param_start, param_end, param_itter) + param_perturb;
+param_set_name = 'alpha'; % name_sys of parameter set (file-storage purposes)
 
 % Initialise System's Parameter Values
 load(['Param_', param_set_name, '/ParamSet.mat']);
-tau_P     = 1.4e-3; % photon lifetime (scale so freq-spectrum is in GHz)
 
-for alpha = [1, 2]  % normalised (time) delay
+num_cycles = 2; % number of cycles of hor. and ver. polar. plotted
+eta_save   = [5]; % save figure for these vals. of eta
+eta_tol    = 1e-2; % the tol. of eta for which fig. will be saved
+
+% Sweeping Parameters
+param_iter    = 30; % bif. resolution
+param_elem    = 4;   % bif. w/respect to param_set
+param_perturb = 1e-5;
+param_vals    = linspace(param_start, param_end, param_iter) + param_perturb;
+
+for alpha = [2:5]
+    beta      = (1-ka)/(2*ka);
     param_set = [P, T, theta, 0, beta, ka, alpha, tau_R, omega, R]; % store params
     
     % Create Folder (load data from/save video to)
-%     folder = ['Param_', param_set_name, '/SYS_', name_sys, '_theta=',...
-%         num2str(theta)];
-    folder = ['Param_', param_set_name, '/SYS_', name_sys, '_alpha=',...
+    folder = ['Param_', param_set_name, '/SYS_', name_sys, '_',...
+        param_set_name, '=',...
         num2str(alpha)];
-%     folder = ['Param_', param_set_name, '/SYS_', name_sys, '_kappa=',...
-%         num2str(kappa)];
+
     eta     = importdata([folder, '/bif_eta.txt']);
     maxima  = importdata([folder, '/bif_extrema.txt']);
     log     = (eta <= param_end & eta >= param_start);
@@ -83,8 +69,6 @@ for alpha = [1, 2]  % normalised (time) delay
     maxima  = maxima(log);
     
     % Initialise Analysis Parameters
-    h         = 1;
-    horizon   = 0.2e6;
     transient = 1e6;
     delay     = floor(theta/h);
     
@@ -97,13 +81,13 @@ for alpha = [1, 2]  % normalised (time) delay
     open(vidObj); % start video
     
     %% INTEGRATE, ANALYSE and PLOT
-    for itter = 1:param_itter
-        param_set(param_elem) = param_vals(itter);
+    for iter = 1:param_iter
+        param_set(param_elem) = param_vals(iter);
         if ~isequal(transient, 0)
-            sim_past = IntegSimLaser(param_set, [h transient], sim_past, DIM,...
+            sim_past = integSimLaser(param_set, [h transient], sim_past, DIM,...
                 name_sys, BIF_EQN);
         end
-        sim_past = IntegSimLaser(param_set, [h horizon], sim_past, DIM,...
+        sim_past = integSimLaser(param_set, [h horizon], sim_past, DIM,...
             name_sys, BIF_EQN);
         if any(any(isnan(sim_past)))
             disp(['System ', name_sys, ' has NaN values.'])
@@ -137,9 +121,11 @@ for alpha = [1, 2]  % normalised (time) delay
                              ', \kappa=', num2str(ka),...
                              ', \alpha=', num2str(alpha),...
                              ', \tau_R=', num2str(tau_R),...
+                             ', T=', num2str(T),...
                              ', R=', num2str(R),' \}'])
             legend({'Horizontal', 'Vertical'}, 'FontSize', 11)
             ylabel('Power (10 log-dB)', 'fontsize',14)
+            ylim([0, 2])
             
             
             % Plot FFT - horizontal
@@ -178,6 +164,8 @@ for alpha = [1, 2]  % normalised (time) delay
             if (any(abs(param_set(param_elem) - eta_save) <= eta_tol))
                 saveas(h1, [folder, '/', 'SYS_', name_sys, '_timetraces_eta=',...
                     num2str(param_set(param_elem))], 'png');
+                savefig([folder, '/', 'SYS_', name_sys, '_timetraces_eta=',...
+                    num2str(param_set(param_elem)), '.fig'])
             end
             
             % Save Current Frame
